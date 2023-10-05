@@ -1,7 +1,11 @@
 const YAML = require("yaml");
 const axios = require("axios");
 
+
 module.exports = async (req, res) => {
+
+  const config = { runtime: 'edge' };
+  
   const url = req.query.url;
   const target = req.query.target;
   console.log(`query: ${JSON.stringify(req.query)}`);
@@ -27,22 +31,22 @@ module.exports = async (req, res) => {
   }
 
   console.log(`Parsing YAML`);
-  let config = null;
+  let config_yaml = null;
   try {
-    config = YAML.parse(configFile);
+    config_yaml = YAML.parse(configFile);
     console.log(`👌 Parsed YAML`);
   } catch (error) {
     res.status(500).send(`Unable parse config, error: ${error}`);
     return;
   }
 
-  if (config.proxies === undefined) {
+  if (config_yaml.proxies === undefined) {
     res.status(400).send("No proxies in this config");
     return;
   }
 
   if (target === "surge") {
-    const supportedProxies = config.proxies.filter((proxy) =>
+    const supportedProxies = config_yaml.proxies.filter((proxy) =>
       ["ss", "vmess", "trojan"].includes(proxy.type)
     );
     const surgeProxies = supportedProxies.map((proxy) => {
@@ -115,7 +119,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(proxies.join("\n"));
   } else {
-    const response = YAML.stringify({ proxies: config.proxies });
+    const response = YAML.stringify({ proxies: config_yaml.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(response);
   }
